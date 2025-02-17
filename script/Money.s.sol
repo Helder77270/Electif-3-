@@ -11,6 +11,7 @@ contract MoneyScript is Script {
 
     function run() public {
         address sender = vm.envAddress("SENDER_ADDRESS");
+        
         vm.startBroadcast(sender);
 
         money = new Money(initialSupply); // Mint 10 000 tokens à l'admin

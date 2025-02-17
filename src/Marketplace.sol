@@ -48,7 +48,7 @@ contract Marketplace is Money {
     * @param _price Price of the item
     */
    function createItem(string calldata _name, uint256 _price) public onlyOwner{
-       Item memory item = Item(_name, _price, block.timestamp, address(0));
+       Item memory item = Item(_name, _price, block.timestamp, msg.sender);
        Items[storeCounter] = item;
        storeCounter++;
    }
@@ -65,7 +65,7 @@ contract Marketplace is Money {
    function buyItem(uint256 _id) public {
 
     (string memory name, uint256 price, uint256 timestamp, address owner) = getItemById(_id);
-    require(block.timestamp > timestamp, TimeIssue(timestamp));
+    require(block.timestamp >= timestamp, TimeIssue(timestamp));
 
     transfer(owner, price);
     Items[_id].owner = msg.sender;
