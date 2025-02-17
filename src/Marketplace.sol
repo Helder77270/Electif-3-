@@ -64,7 +64,7 @@ contract Marketplace is Money {
     */
    function buyItem(uint256 _id) public {
 
-    (string memory name, uint256 price, uint256 timestamp, address owner) = getItem(_id);
+    (string memory name, uint256 price, uint256 timestamp, address owner) = getItemById(_id);
     require(block.timestamp > timestamp, TimeIssue(timestamp));
 
     transfer(owner, price);

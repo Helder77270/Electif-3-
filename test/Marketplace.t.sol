@@ -44,7 +44,7 @@ contract MarketplaceTest is Test {
         marketplace.createItem("item1", 100);
 
          // Déstructurer les valeurs de l'item retourné par le mapping
-        (string memory name, uint256 price, uint256 timestamp, address owner) = marketplace.getItem(0);
+        (string memory name, uint256 price, uint256 timestamp, address owner) = marketplace.getItemById(0);
 
         assertEq("item1", name, "Le nom de l'item est incorrect");
         assertEq(100, price, "Le prix de l'item est incorrect");
@@ -73,7 +73,7 @@ contract MarketplaceTest is Test {
     marketplace.createItem("item1", 100);
 
     // Déstructurer l'item créé pour vérifier ses valeurs
-    (string memory name, uint256 price, uint256 timestamp, address owner) = marketplace.getItem(0);
+    (string memory name, uint256 price, uint256 timestamp, address owner) = marketplace.getItemById(0);
     assertEq(owner, address(0), "L'item devrait ne pas avoir de proprietaire initial");
 
     // Simuler que l'administrateur effectue un mint pour le user
@@ -85,7 +85,7 @@ contract MarketplaceTest is Test {
     marketplace.buyItem(0);
 
     // Vérifier que le propriétaire de l'item est maintenant l'utilisateur
-    (string memory name1, uint256 price1, uint256 timestamp1, address owner1) = marketplace.getItem(0);
+    (string memory name1, uint256 price1, uint256 timestamp1, address owner1) = marketplace.getItemById(0);
     assertEq(user, owner1, "L'utilisateur devrait etre le proprietaire de l'item apres l'achat");
 
     // Vérifier que le solde du user a été mis à jour
