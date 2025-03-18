@@ -12,6 +12,28 @@ contract MarketplaceTest is Test {
     function setUp() public {
         admin = address(0x123);
         user = address(0x456);
+        vm.prank(admin);
+            marketplace = new Marketplace(1000);
+        vm.stopPrank();
+    }
+
+    function testCreateItem() public {
+
+        // On passe en mode admin car la fonction createItem est protégé par le modifier onlyOwner
+        vm.prank(admin);
+        
+        // Permets de setup le timestamp
+        vm.warp(1);
+        // On appelle la fonction createItem, étant le premier créer de la liste son id = 0
+        marketplace.createItem("item1", 100);
+
+         // Déstructurer les valeurs de l'item retourné par le mapping
+        (string memory name, uint256 price, uint256 timestamp, address owner) = marketplace.getItemById(0);
+
+        assertEq("item1", name, "Le nom de l'item est incorrect");
+        assertEq(100, price, "Le prix de l'item est incorrect");
+        assertEq(1, timestamp, "Le timestamp de l'item est incorrect");
+        assertEq(address(0), owner, "Le timestamp de l'item est incorrect");
 
         // ON UTILISE DE FORCE L'ADRESSE DE L'ADMINISTRATE8UR
         vm.startPrank(admin);
