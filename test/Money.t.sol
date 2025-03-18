@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.20;
 
 import {Test, console} from "forge-std/Test.sol";
 import {Money} from "../src/Money.sol";
@@ -13,46 +13,29 @@ contract MoneyTest is Test {
         admin = address(0x123);
         user = address(0x456);
 
-        // ON UTILISE DE FORCE L'ADRESSE DE L'ADMINISTRATEUR
+        // ON UTILISE DE FORCE L'ADRESSE DE L'ADMINISTRATE8UR
         vm.startPrank(admin);
      
-            money = new Money(1000); // On déploie le contrat
-
+            money = new Money("$MONEY$", "$$$"); // On déploie le contrat
+            
         vm.stopPrank();
     }
 
-    function testTokenNameAndSymbol() public {
-        assertEq("MONEY", money.name(), "Les noms de tokens sont differents");
-        assertEq("$DOL", money.symbol(), "Les symboles sont differents");
+    // FONCTIONS DE TESTS ICI
+    function testTokenAndSymbolName() public view {
+        assertEq("$MONEY$", money.name(), "LE NOM EST INEGAL");
+        assertEq("$$$", money.symbol(), "LE SYMBOL EST INEGAL");
     }
 
-    function testMintAndTotalSupply() public {
-        assertEq(1000, money.balanceOf(admin), "le montant mint est different");
-        assertEq(1000, money.totalSupply(), "La total supply est differente du montant cree");
-
+    /// Faire un mint en simulant l'owner qui se mint 10 000 tokens, vous devez vérifier, sa balance et la totalSupply
+    function testMintByAdmin() public {
         vm.startPrank(admin);
-
-            money.mint(user, 1000);
-
-            assertEq(1000, money.balanceOf(user), "Le montant mint est different pour le user");
-            assertEq(2000, money.totalSupply(), "La total supply est differente du total cree");
-
+            money.mint(admin, 10000);
+            money.mint(user, 10000);
         vm.stopPrank();
+
+        assertEq(money.balanceOf(admin), 10000);
+        assertEq(money.balanceOf(user), 10000);
+        assertEq(money.totalSupply(), 20000);
     }
-     
-//    function testMintEvent() public {
-//     // Simuler que l'appel est fait par l'admin
-//     vm.prank(admin);
-
-//     // Configurer la vérification de l'émission de l'événement
-//     vm.expectEmit(true, true, true, false); // Vérifie les champs `indexed`
-//     emit Transfer(address(0), user, 3000); // Événement attendu
-
-//     // Appeler la fonction qui émet l'événement
-//     money.mint(user, 3000);
-
-//     // Arrêter la simulation de l'utilisateur
-//     vm.stopPrank();
-// }
-
 }

@@ -1,95 +1,53 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
- 
+pragma solidity ^0.8.20;
+
 import {Test, console} from "forge-std/Test.sol";
 import {Marketplace} from "../src/Marketplace.sol";
- 
+
 contract MarketplaceTest is Test {
     Marketplace public marketplace;
     address admin;
     address user;
- 
+    error OwnableUnauthorizedAccount(address caller);
     function setUp() public {
         admin = address(0x123);
         user = address(0x456);
-        vm.prank(admin);
-            marketplace = new Marketplace(1000);
-        vm.stopPrank();
-    }
- 
-    // function testTokenNameAndSymbol() public {
-    //     assertEq("MONEY", marketplace.name(), "Les noms de tokens sont differents");
-    //     assertEq("$DOL", marketplace.symbol(), "Les symboles sont differents");
-    // }
- 
-    // function testMintAndTotalSupply() public {
-    //     assertEq(1000, marketplace.balanceOf(admin), "Le montant minte est incorrect pour l'admin");
-    //     assertEq(1000, marketplace.totalSupply(), "Le total supply est incorrect");
- 
-    //     vm.prank(admin);
-    //     marketplace.mint(user, 1000);
-    //     assertEq(1000, marketplace.balanceOf(user), "Le montant minte est incorrect pour l'utilisateur");
-    //     assertEq(2000, marketplace.totalSupply(), "Le total supply est incorrect");
-    //     vm.stopPrank();
-    // }
- 
-    function testCreateItem() public {
 
-        // On passe en mode admin car la fonction createItem est protégé par le modifier onlyOwner
-        vm.prank(admin);
-        
-        // Permets de setup le timestamp
-        vm.warp(1);
-        // On appelle la fonction createItem, étant le premier créer de la liste son id = 0
-        marketplace.createItem("item1", 100);
-
-         // Déstructurer les valeurs de l'item retourné par le mapping
-        (string memory name, uint256 price, uint256 timestamp, address owner) = marketplace.getItem(0);
-
-        assertEq("item1", name, "Le nom de l'item est incorrect");
-        assertEq(100, price, "Le prix de l'item est incorrect");
-        assertEq(1, timestamp, "Le timestamp de l'item est incorrect");
-        assertEq(address(0), owner, "Le timestamp de l'item est incorrect");
-
+        // ON UTILISE DE FORCE L'ADRESSE DE L'ADMINISTRATE8UR
+        vm.startPrank(admin);
+     
+            marketplace = new Marketplace("$MONEY$", "$$$"); // On déploie le contrat
+            
         vm.stopPrank();
     }
 
-    function testFailCreateItemByUser() public {
-         // On passe en mode admin car la fonction createItem est protégé par le modifier onlyOwner
-        vm.prank(user);
-        
-        // Permets de setup le timestamp
-        vm.warp(1);
-        // On appelle la fonction createItem, étant le premier créer de la liste son id = 0
-        marketplace.createItem("item1", 100);
+    /// 
+    function testMintByNonOwner() public {
+        vm.expectRevert(abi.encodeWithSelector(OwnableUnauthorizedAccount.selector, user));
+        vm.startPrank(user);
 
+            marketplace.mint(user, 1000);
         vm.stopPrank();
+
     }
 
-    function testBuyItem() public {
-    // Simuler que l'administrateur crée un item
-    vm.prank(admin);
-    vm.warp(1);
-    marketplace.createItem("item1", 100);
+function testCreateItemEvent() public {
+    // Définir les valeurs attendues
+    string memory expectedName = "TestItem";
+    uint256 expectedPrice = 1000;
+    // Dans createItem, l'owner est défini comme address(this) (l'adresse du contrat)
+    address expectedOwner = address(marketplace);
+    // Pour le timestamp, afin d’éviter les problèmes liés à block.timestamp,
+    // vous pouvez fixer le temps avec vm.warp() avant l'appel ou vérifier partiellement.
+    uint256 expectedTimestamp = block.timestamp; 
 
-    // Déstructurer l'item créé pour vérifier ses valeurs
-    (string memory name, uint256 price, uint256 timestamp, address owner) = marketplace.getItem(0);
-    assertEq(owner, address(0), "L'item devrait ne pas avoir de proprietaire initial");
+    // Indiquer que l'on souhaite vérifier tous les champs de l'événement.
+    vm.expectEmit(true, true, true, true);
+    emit Marketplace.ItemCreated(expectedName, expectedPrice, expectedOwner, expectedTimestamp);
 
-    // Simuler que l'administrateur effectue un mint pour le user
-    vm.prank(admin); // Prank pour garantir que seul l'admin appelle mint
-    marketplace.mint(user, 1000);
-
-    // Simuler que l'utilisateur achète l'item
-    vm.prank(user);
-    marketplace.buyItem(0);
-
-    // Vérifier que le propriétaire de l'item est maintenant l'utilisateur
-    (string memory name1, uint256 price1, uint256 timestamp1, address owner1) = marketplace.getItem(0);
-    assertEq(user, owner1, "L'utilisateur devrait etre le proprietaire de l'item apres l'achat");
-
-    // Vérifier que le solde du user a été mis à jour
-    assertEq(marketplace.balanceOf(user), 900, "Le solde de l'utilisateur devrait etre 900 apres l'achat");
-    }
-
+    // Exécuter la fonction qui doit émettre l’événement
+    vm.startPrank(admin);
+         marketplace.createItem(expectedName, expectedPrice);
+    vm.stopPrank();
+}
 }

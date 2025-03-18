@@ -1,91 +1,97 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
- 
-import "./Money.sol";
- 
-/**
- * @title Marketplace
- * @dev A contract for creating and buying items using a custom token
- * @notice Inherits from Money contract and manages item sales
- */
+
+import {Money} from "./Money.sol";
+
 contract Marketplace is Money {
-   /// @dev Counter to track the number of items created
-   uint256 storeCounter;
- 
-   /**
-    * @dev Struct to represent an item in the marketplace
-    * @param name Name of the item
-    * @param price Price of the item
-    * @param timestamp Timestamp of item creation
-    * @param owner Address of the item owner
-    */
-   struct Item {
-           string name;
-           uint256 price;
-           uint256 timestamp;
-           address owner;
-   }
- 
-   /// @dev Mapping to store items by their unique ID
-   mapping (uint256 id => Item) public Items; // clé => valeur
- 
-   /// @dev Custom error for incorrect payment amount
-   /// @param sentAmount Amount of payment sent
-   /// @param awaitedAmount Expected payment amount
-   error IncorrectPaymentAmount(uint256 sentAmount, uint256 awaitedAmount);
- 
-   /**
-    * @dev Constructor initializes the marketplace with initial token supply
-    * @param initSupply Initial token supply
-    */
-   constructor(uint256 initSupply) Money(initSupply){
-       
-   }
- 
-   /**
-    * @dev Creates a new item in the marketplace
-    * @notice Only contract owner can create items
-    * @param _name Name of the item
-    * @param _price Price of the item
-    */
-   function createItem(string calldata _name, uint256 _price) public onlyOwner{
-       Item memory item = Item(_name, _price, block.timestamp, address(0));
-       Items[storeCounter] = item;
-       storeCounter++;
-   }
+    struct Item {
+        string name;
+        uint256 price;
+        address owner;
+        bool status;
+        uint256 timestamp;
+    }
 
-   /// @dev Custom error for time-related issues
-   /// @param minimalTimestamp Minimum allowed timestamp
-   error TimeIssue(uint256 minimalTimestamp);
+    mapping(uint256 id => Item) private items;
+    uint256 itemCounter = 0;
 
-   /**
-    * @dev Allows purchasing an item from the marketplace
-    * @param _id Unique identifier of the item to buy
-    * @notice Transfers tokens and updates item ownership
-    */
-   function buyItem(uint256 _id) public {
+    modifier isValidId(uint256 id) {
+        require(id < itemCounter, ItemNotFound());
+        _;
+    }
 
-    (string memory name, uint256 price, uint256 timestamp, address owner) = getItem(_id);
-    require(block.timestamp > timestamp, TimeIssue(timestamp));
+    event ItemCreated(
+        string name_,
+        uint256 price_,
+        address owner,
+        uint256 timestamp
+    );
 
-    transfer(owner, price);
-    Items[_id].owner = msg.sender;
-   }
+    error ItemNotAvailable();
+    error InsufficientBalance();
+    error CannotBuyOwnItem();
+    error ItemNotFound();
+    error ItemAlreadyExists();
+    error ItemNotOwned();
 
-   /**
-    * @dev Retrieves item details
-    * @param _id Unique identifier of the item
-    * @return Item name, price, timestamp, and owner
-    */
-   function getItemById(uint _id) public view returns(string memory, uint, uint, address){
-        return (Items[_id].name, Items[_id].price, Items[_id].timestamp, Items[_id].owner);
-   }
+    constructor(
+        string memory name,
+        string memory symbol
+    ) Money(name, symbol) {}
 
-   /**
-    * @dev Retrieves item details
-    * @param _id Unique identifier of the item
-    * @return Item name, price, timestamp, and owner
-    */
-   function getItemById2(uint _id) public view returns(Item memory){
-        return Items[_id];
-   }
+    function createItem(
+        string memory name_,
+        uint256 price_
+    ) external onlyOwner {
+        items[itemCounter] = Item(
+            name_, price_, address(this), false, block.timestamp
+        );
+        itemCounter++;
+        emit ItemCreated(name_, price_, address(this), block.timestamp);
+    }
+
+    function getContractAddress() external view returns (address) {
+        return address(this);
+    }
+
+    function getItemById(
+        uint256 id
+    ) external view isValidId(id) returns (Item memory item) {
+        return items[id];
+    }
+
+    function getAllItems() external view returns (Item[] memory) {
+        Item[] memory allItems = new Item[](100);
+        for (uint256 i = 0; i < 100; i++) {
+            allItems[i] = items[i];
+        }
+        return allItems;
+    }
+
+    function buyItem(uint256 id) external {
+        require(items[id].status, ItemNotAvailable());
+        require(msg.sender != items[id].owner, CannotBuyOwnItem());
+        require(
+            balanceOf(msg.sender) >= items[id].price,
+            InsufficientBalance()
+        );
+
+        items[id].owner = msg.sender;
+        items[id].status = false;
+        transfer(items[id].owner, items[id].price);
+    }
+
+    function setItemStatus(
+        uint256 id,
+        bool status
+    ) public onlyOwner isValidId(id) {
+        require(id < itemCounter, ItemNotFound());
+        items[id].status = status;
+    }
+
+    function getItemStatus(
+        uint256 id
+    ) public view isValidId(id) returns (bool) {
+        return items[id].status;
+    }
 }
