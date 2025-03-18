@@ -32,7 +32,7 @@ contract MarketplaceTest is Test {
         assertEq("item1", item.name, "Le nom de l'item est incorrect");
         assertEq(100, item.price, "Le prix de l'item est incorrect");
         assertEq(1, item.timestamp, "Le timestamp de l'item est incorrect");
-        assertEq(address(0), item.owner, "Le timestamp de l'item est incorrect");
+        assertEq(marketplace.getContractAddress(), item.owner, "Le timestamp de l'item est incorrect");
 
         // ON UTILISE DE FORCE L'ADRESSE DE L'ADMINISTRATE8UR
         vm.startPrank(admin);
